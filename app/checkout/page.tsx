@@ -3,6 +3,8 @@ import { useCartStore } from "@/store/useCart";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Truck, Wallet, CheckCircle2 } from "lucide-react";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import PlaceholderImage from "@/components/PlaceholderImage";
 
 export default function CheckoutPage() {
@@ -10,17 +12,48 @@ export default function CheckoutPage() {
   const [mounted, setMounted] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [orderId, setOrderId] = useState("");
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setTimeout(() => {
+    setIsLoading(true);
+    
+    try {
+      const form = e.target as HTMLFormElement;
+      
+      const orderData = {
+        customerName: (form.elements.namedItem('customerName') as HTMLInputElement).value,
+        phone: (form.elements.namedItem('phone') as HTMLInputElement).value,
+        address: (form.elements.namedItem('address') as HTMLInputElement).value,
+        note: (form.elements.namedItem('note') as HTMLTextAreaElement).value,
+        paymentMethod,
+        items: items.map(item => ({
+          productId: item.product.id,
+          name: item.product.name,
+          price: item.product.price,
+          quantity: item.quantity
+        })),
+        totalPrice: totalPrice(),
+        status: "pending",
+        createdAt: serverTimestamp()
+      };
+
+      const docRef = await addDoc(collection(db, "orders"), orderData);
+      setOrderId(docRef.id);
+      
       setIsSuccess(true);
       clearCart();
-    }, 1000);
+    } catch (error) {
+      console.error("Lỗi khi đặt hàng:", error);
+      alert("Đặt hàng thất bại. Vui lòng thử lại!");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!mounted) return null;
@@ -34,7 +67,7 @@ export default function CheckoutPage() {
           </div>
           <h1 className="text-4xl font-extrabold text-textDefault mb-6">Đặt hàng thành công!</h1>
           <p className="text-gray-600 mb-10 text-xl leading-relaxed">
-            Cảm ơn bạn đã tin dùng <strong>Quà Đà Nẵng</strong>. Mã đơn hàng của bạn là <span className="font-extrabold text-primary bg-primary/10 px-3 py-1 rounded-lg">#QDN-{Math.floor(Math.random() * 10000)}</span>. 
+            Cảm ơn bạn đã tin dùng <strong>Quà Đà Nẵng</strong>. Mã đơn hàng của bạn là <span className="font-extrabold text-primary bg-primary/10 px-3 py-1 rounded-lg">#{orderId.substring(0, 6).toUpperCase()}</span>. 
             Chúng tôi sẽ liên hệ trong 24h để giao hàng.
           </p>
           <Link
@@ -84,6 +117,7 @@ export default function CheckoutPage() {
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-3 ml-1 uppercase tracking-wide">Họ và tên *</label>
                     <input
+                      name="customerName"
                       required
                       type="text"
                       className="w-full border-2 border-gray-100 bg-gray-50/50 rounded-2xl px-5 py-4 focus:bg-white focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/20 transition-all font-medium"
@@ -93,6 +127,7 @@ export default function CheckoutPage() {
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-3 ml-1 uppercase tracking-wide">Số điện thoại *</label>
                     <input
+                      name="phone"
                       required
                       type="tel"
                       className="w-full border-2 border-gray-100 bg-gray-50/50 rounded-2xl px-5 py-4 focus:bg-white focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/20 transition-all font-medium"
@@ -103,6 +138,7 @@ export default function CheckoutPage() {
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-3 ml-1 uppercase tracking-wide">Địa chỉ giao hàng chi tiết *</label>
                   <input
+                    name="address"
                     required
                     type="text"
                     className="w-full border-2 border-gray-100 bg-gray-50/50 rounded-2xl px-5 py-4 focus:bg-white focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/20 transition-all font-medium"
@@ -112,6 +148,7 @@ export default function CheckoutPage() {
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-3 ml-1 uppercase tracking-wide">Ghi chú (Tùy chọn)</label>
                   <textarea
+                    name="note"
                     rows={4}
                     className="w-full border-2 border-gray-100 bg-gray-50/50 rounded-2xl px-5 py-4 focus:bg-white focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/20 transition-all font-medium resize-none"
                     placeholder="Giờ giao hàng, dặn dò shipper..."
@@ -190,9 +227,10 @@ export default function CheckoutPage() {
                 <button
                   type="submit"
                   form="checkout-form"
-                  className="w-full bg-primary hover:bg-red-800 text-white py-5 rounded-2xl font-black transition-all duration-300 shadow-[0_15px_30px_rgba(139,30,30,0.3)] hover:shadow-[0_20px_40px_rgba(139,30,30,0.4)] hover:-translate-y-1 text-2xl flex items-center justify-center gap-3 tracking-wide"
+                  disabled={isLoading}
+                  className={`w-full bg-primary hover:bg-red-800 text-white py-5 rounded-2xl font-black transition-all duration-300 ${isLoading ? 'opacity-70 cursor-not-allowed' : 'shadow-[0_15px_30px_rgba(139,30,30,0.3)] hover:shadow-[0_20px_40px_rgba(139,30,30,0.4)] hover:-translate-y-1'} text-2xl flex items-center justify-center gap-3 tracking-wide`}
                 >
-                  Xác Nhận Đặt Hàng <CheckCircle2 className="w-6 h-6"/>
+                  {isLoading ? 'Đang xử lý...' : <>Xác Nhận Đặt Hàng <CheckCircle2 className="w-6 h-6"/></>}
                 </button>
                 <p className="text-center text-sm font-medium text-gray-400 mt-6 leading-relaxed max-w-[85%] mx-auto">
                   Bằng việc chọn "Xác Nhận Đặt Hàng", bạn đồng ý với Điều Khoản Dịch Vụ và Chính Sách Bảo Mật.

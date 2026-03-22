@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { LogOut, Package, Tags, LayoutDashboard, HomeIcon, Images } from 'lucide-react';
+import { LogOut, Package, Tags, LayoutDashboard, HomeIcon, Images, ShoppingCart } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, logout } = useAuthStore();
@@ -39,6 +39,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
           <Link href="/admin/products" className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${pathname === '/admin/products' ? 'bg-primary/10 text-primary font-bold' : 'text-gray-600 hover:bg-gray-100'}`}>
             <Package className="w-5 h-5"/> Sản phẩm
+          </Link>
+          <Link href="/admin/orders" className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${pathname === '/admin/orders' ? 'bg-primary/10 text-primary font-bold' : 'text-gray-600 hover:bg-gray-100'}`}>
+            <ShoppingCart className="w-5 h-5"/> Đơn hàng
           </Link>
           <Link href="/admin/categories" className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${pathname === '/admin/categories' ? 'bg-primary/10 text-primary font-bold' : 'text-gray-600 hover:bg-gray-100'}`}>
             <Tags className="w-5 h-5"/> Danh mục

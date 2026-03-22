@@ -18,23 +18,26 @@ export default function AdminProducts() {
     if (!file) return;
 
     setUploading(true);
-    const data = new FormData();
-    data.append("file", file);
+    setUploading(true);
 
     try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: data,
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
       });
-      const result = await res.json();
-      if (result.success) {
-        setFormData(prev => ({ ...prev, image: result.url }));
-      } else {
-        alert("Lỗi tải ảnh!");
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
       }
+
+      const data = await response.json();
+      setFormData(prev => ({ ...prev, image: data.url }));
     } catch (error) {
       console.error(error);
-      alert("Lỗi tải ảnh!");
+      alert("Lỗi tải ảnh lên Cloudinary!");
     } finally {
       setUploading(false);
     }

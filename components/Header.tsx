@@ -1,31 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ShoppingCart, Search, Menu, X } from "lucide-react";
 import { useCartStore } from "@/store/useCart";
 import { useState, useEffect } from "react";
 
+import { useUIStore } from "@/store/useUIStore";
+
 export default function Header() {
+  const { mediaSlots, initStore } = useUIStore();
   const toggleCart = useCartStore((state) => state.toggleCart);
   const totalItems = useCartStore((state) => state.totalItems);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const pathname = usePathname();
+  const router = useRouter();
   const isHomePage = pathname === "/";
   const useDarkText = isScrolled || !isHomePage;
+
+  const logoUrl = mediaSlots.find(s => s.id === 'site_logo')?.url;
 
   // Client-side hydration check for cart badge
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    initStore();
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [initStore]);
 
   if (pathname?.startsWith("/admin")) return null;
 
@@ -37,40 +45,63 @@ export default function Header() {
     >
       <div className="container mx-auto px-4 lg:px-8 flex justify-between items-center">
         {/* Logo */}
-        <Link href="/">
-          <span className={`text-2xl font-bold tracking-tight ${useDarkText ? "text-primary" : "text-white drop-shadow-lg"}`}>
-            Quà Đà Nẵng
+        <Link href="/" className="flex items-center gap-1.5">
+          {logoUrl && (
+            <img 
+              src={logoUrl} 
+              alt="Logo" 
+              className="h-10 md:h-12 w-auto object-contain transition-all" 
+            />
+          )}
+          <span className={`text-2xl md:text-3xl font-heading font-extrabold tracking-tighter ${useDarkText ? "text-primary" : "text-white drop-shadow-2xl"}`}>
+            Quà <span className="text-secondary tracking-normal">Đà Nẵng</span>
           </span>
         </Link>
 
         {/* Desktop Menu */}
-        <nav className="hidden lg:flex items-center space-x-8">
-          <Link href="/" className={`font-semibold hover:text-secondary transition-colors ${useDarkText ? "text-textDefault" : "text-white"}`}>Trang Chủ</Link>
+        <nav className="hidden lg:flex items-center space-x-10">
+          <Link href="/" className={`text-lg font-bold hover:text-secondary transition-all hover:scale-105 ${useDarkText ? "text-textDefault" : "text-white"}`}>Trang Chủ</Link>
           <div className="group relative">
-            <Link href="/products" className={`flex items-center font-semibold hover:text-secondary transition-colors ${useDarkText ? "text-textDefault" : "text-white"}`}>
+            <Link href="/products" className={`flex items-center text-lg font-bold hover:text-secondary transition-all hover:scale-105 ${useDarkText ? "text-textDefault" : "text-white"}`}>
               Sản Phẩm
             </Link>
-            {/* Multi-level Dropdown Placeholder */}
-            {/* <div className="absolute top-full left-0 opacity-0 group-hover:opacity-100 hidden group-hover:block transition-opacity bg-white text-textDefault rounded shadow-lg p-2 mt-2 w-48">
-              <Link href="/products?category=banh-keo" className="block px-4 py-2 hover:bg-gray-100 rounded">Bánh kẹo</Link>
-              <Link href="/products?category=do-kho" className="block px-4 py-2 hover:bg-gray-100 rounded">Đồ khô</Link>
-              <Link href="/products?category=mam" className="block px-4 py-2 hover:bg-gray-100 rounded">Mắm</Link>
-            </div> */}
           </div>
-          <Link href="/about" className={`font-semibold hover:text-secondary transition-colors ${useDarkText ? "text-textDefault" : "text-white"}`}>Về chúng tôi</Link>
-          <Link href="/contact" className={`font-semibold hover:text-secondary transition-colors ${useDarkText ? "text-textDefault" : "text-white"}`}>Liên hệ</Link>
+          <Link href="/about" className={`text-lg font-bold hover:text-secondary transition-all hover:scale-105 ${useDarkText ? "text-textDefault" : "text-white"}`}>Khám Phá</Link>
+          <Link href="/contact" className={`text-lg font-bold hover:text-secondary transition-all hover:scale-105 ${useDarkText ? "text-textDefault" : "text-white"}`}>Liên hệ</Link>
+          <Link href="/dac-san-da-nang" className={`text-lg font-bold hover:text-secondary transition-all hover:scale-105 ${useDarkText ? "text-textDefault" : "text-white"}`}>Cẩm Nang</Link>
+          <Link href="/track-order" className={`text-lg font-extrabold hover:bg-secondary hover:text-primary transition-all ${useDarkText ? "text-primary bg-primary/5 px-4 py-2 rounded-xl border border-primary/20" : "text-white bg-white/10 px-4 py-2 rounded-xl border border-white/20"}`}>Tra cứu</Link>
         </nav>
 
         {/* Actions */}
-        <div className="flex items-center space-x-6">
-          <button className={`hover:text-secondary transition-colors ${useDarkText ? "text-textDefault" : "text-white"}`}>
-            <Search className="w-5 h-5" />
-          </button>
+        <div className="flex items-center space-x-4 lg:space-x-8">
+          {/* Search Form */}
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (searchQuery.trim()) {
+                router.push(`/products?search=${encodeURIComponent(searchQuery)}`);
+                setSearchQuery("");
+                setMobileMenuOpen(false);
+              }
+            }}
+            className={`flex items-center rounded-2xl px-4 py-2 transition-all ${useDarkText ? "bg-white border-gray-200 shadow-sm" : "bg-white/10 border-white/20 backdrop-blur-md"} border focus-within:ring-2 focus-within:ring-secondary focus-within:border-secondary w-36 md:w-56 lg:w-64`}
+          >
+            <input 
+              type="text"
+              placeholder="Tìm đặc sản..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`bg-transparent outline-none text-sm w-full placeholder-gray-400 font-medium ${useDarkText ? "text-textDefault" : "text-white"}`}
+            />
+            <button type="submit" className={`hover:text-secondary transition-colors ${useDarkText ? "text-primary" : "text-white"}`}>
+              <Search className="w-5 h-5 ml-1" />
+            </button>
+          </form>
           
-          <button onClick={toggleCart} className={`relative flex items-center hover:text-secondary transition-colors ${useDarkText ? "text-textDefault" : "text-white"}`}>
-            <ShoppingCart className="w-6 h-6" />
+          <button onClick={toggleCart} className={`relative flex items-center hover:text-secondary transition-transform hover:scale-110 ${useDarkText ? "text-primary" : "text-white"}`}>
+            <ShoppingCart className="w-7 h-7" />
             {mounted && totalItems() > 0 && (
-              <span className="absolute -top-2 -right-2 bg-primary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="absolute -top-2 -right-2 bg-accent text-white text-[10px] font-black rounded-full w-5 h-5 flex items-center justify-center animate-bounce">
                 {totalItems()}
               </span>
             )}
@@ -88,12 +119,14 @@ export default function Header() {
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 w-full bg-background shadow-lg border-t border-gray-200">
-          <nav className="flex flex-col px-4 py-4 space-y-4">
-            <Link href="/" className="text-textDefault font-semibold" onClick={() => setMobileMenuOpen(false)}>Trang Chủ</Link>
-            <Link href="/products" className="text-textDefault font-semibold" onClick={() => setMobileMenuOpen(false)}>Sản Phẩm</Link>
-            <Link href="/about" className="text-textDefault font-semibold" onClick={() => setMobileMenuOpen(false)}>Về chúng tôi</Link>
-            <Link href="/contact" className="text-textDefault font-semibold" onClick={() => setMobileMenuOpen(false)}>Liên hệ</Link>
+        <div className="lg:hidden absolute top-full left-0 w-full bg-white shadow-2xl border-t border-gray-100 animate-in slide-in-from-top duration-300">
+          <nav className="flex flex-col px-6 py-8 space-y-6">
+            <Link href="/" className="text-textDefault font-bold text-lg hover:text-primary transition-colors" onClick={() => setMobileMenuOpen(false)}>Trang Chủ</Link>
+            <Link href="/products" className="text-textDefault font-bold text-lg hover:text-primary transition-colors" onClick={() => setMobileMenuOpen(false)}>Sản Phẩm</Link>
+            <Link href="/about" className="text-textDefault font-bold text-lg hover:text-primary transition-colors" onClick={() => setMobileMenuOpen(false)}>Khám Phá</Link>
+            <Link href="/contact" className="text-textDefault font-bold text-lg hover:text-primary transition-colors" onClick={() => setMobileMenuOpen(false)}>Liên hệ</Link>
+            <Link href="/dac-san-da-nang" className="text-textDefault font-bold text-lg hover:text-primary transition-colors" onClick={() => setMobileMenuOpen(false)}>Cẩm Nang</Link>
+            <Link href="/track-order" className="text-white font-black bg-primary p-4 rounded-xl text-center mt-4 shadow-lg shadow-primary/20" onClick={() => setMobileMenuOpen(false)}>Tra cứu Đơn Hàng</Link>
           </nav>
         </div>
       )}

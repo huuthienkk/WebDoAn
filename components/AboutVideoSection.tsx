@@ -1,5 +1,5 @@
 "use client";
-import { Play, Send } from "lucide-react";
+import { Play, Send, X } from "lucide-react";
 import { useUIStore } from "@/store/useUIStore";
 import { useState, useEffect } from "react";
 import { DrumPattern, ChimLac } from "@/components/DongSonDecor";
@@ -12,12 +12,16 @@ export default function AboutVideoSection() {
     setMounted(true);
   }, []);
 
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
+
   // Safe client-side fallback
   const fallbackImg1 = "https://images.unsplash.com/photo-1542385151-efd9000785a0?q=80&w=800&auto=format&fit=crop";
   const fallbackImg2 = "https://images.unsplash.com/photo-1556761175-5973dc0f32d7?q=80&w=800&auto=format&fit=crop";
   
   const img1 = mounted && videoThumbnails[0]?.url ? videoThumbnails[0].url : fallbackImg1;
   const img2 = mounted && videoThumbnails[1]?.url ? videoThumbnails[1].url : fallbackImg2;
+  const vid1 = mounted && videoThumbnails[0]?.videoUrl ? videoThumbnails[0].videoUrl : null;
+  const vid2 = mounted && videoThumbnails[1]?.videoUrl ? videoThumbnails[1].videoUrl : null;
 
   return (
     <section className="py-20 bg-white relative overflow-hidden">
@@ -69,7 +73,13 @@ export default function AboutVideoSection() {
           <div className="w-full lg:w-8/12 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12">
             
             {/* Video Item 1 */}
-            <div className="group cursor-pointer">
+            <div 
+              className="group cursor-pointer"
+              onClick={() => {
+                if (vid1) setActiveVideoUrl(vid1);
+                else alert("Video này chưa có liên kết. Vui lòng cập nhật trong Admin.");
+              }}
+            >
               <div className="relative rounded-lg overflow-hidden aspect-[16/10] bg-gray-100 shadow-[0_15px_30px_-10px_rgba(0,0,0,0.1)] border border-gray-100">
                 <img 
                   src={img1} 
@@ -99,7 +109,13 @@ export default function AboutVideoSection() {
             </div>
 
             {/* Video Item 2 */}
-            <div className="group cursor-pointer">
+            <div 
+              className="group cursor-pointer"
+              onClick={() => {
+                if (vid2) setActiveVideoUrl(vid2);
+                else alert("Video này chưa có liên kết. Vui lòng cập nhật trong Admin.");
+              }}
+            >
               <div className="relative rounded-lg overflow-hidden aspect-[16/10] bg-gray-100 shadow-[0_15px_30px_-10px_rgba(0,0,0,0.1)] border border-gray-100">
                 <img 
                   src={img2} 
@@ -126,6 +142,38 @@ export default function AboutVideoSection() {
           </div>
         </div>
       </div>
+
+      {/* Video Modal Overlay */}
+      {activeVideoUrl && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-300">
+          <button 
+            onClick={() => setActiveVideoUrl(null)}
+            className="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          
+          <div className="w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-800">
+            {activeVideoUrl.includes("youtube.com") || activeVideoUrl.includes("youtu.be") ? (
+              <iframe
+                src={activeVideoUrl.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/") + "?autoplay=1"}
+                title="Video Player"
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            ) : (
+              <video 
+                src={activeVideoUrl} 
+                className="w-full h-full object-contain"
+                controls 
+                autoPlay 
+              />
+            )}
+          </div>
+        </div>
+      )}
+
     </section>
   );
 }

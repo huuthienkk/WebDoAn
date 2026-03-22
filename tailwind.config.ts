@@ -9,18 +9,22 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: "#8B1E1E",
-        secondary: "#EBAD30",
-        background: "#F7F1E6",
-        accent: "#FFFFFF",
-        textDefault: "#4A3F35",
+        primary: "#00AEEF",
+        secondary: "#FFD166",
+        accent: "#F77F00",
+        background: "#FFFFFF",
+        textDefault: "#333333",
       },
       textColor: {
-        DEFAULT: "#4A3F35",
+        DEFAULT: "#333333",
       },
       backgroundColor: {
-        DEFAULT: "#F7F1E6",
-      }
+        DEFAULT: "#FFFFFF",
+      },
+      fontFamily: {
+        sans: ["Inter", "sans-serif"],
+        heading: ["Poppins", "sans-serif"],
+      },
     },
   },
   plugins: [],

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
-import path from "path";
-import fs from "fs";
+import { v2 as cloudinary } from 'cloudinary';
+
+cloudinary.config({
+  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,27 +19,24 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Ensure directory exists
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    // Clean up filename and make it unique
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const cleanFilename = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
-    const filename = uniqueSuffix + '-' + cleanFilename;
-    const filepath = path.join(uploadDir, filename);
-
-    // Save actual file
-    await writeFile(filepath, buffer);
-
-    // Return the relative URL which Next.js will serve statically from /public
-    const fileUrl = `/uploads/${filename}`;
-
-    return NextResponse.json({ success: true, url: fileUrl });
+    return new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+            { 
+                folder: "quadanang",
+                resource_type: "auto"
+            },
+            (error, result) => {
+                if (error) {
+                    console.error("Cloudinary upload error:", error);
+                    resolve(NextResponse.json({ success: false, error: error.message || "Upload failed. Please check credentials." }, { status: 500 }));
+                } else if (result) {
+                    resolve(NextResponse.json({ success: true, url: result.secure_url }));
+                }
+            }
+        ).end(buffer);
+    });
   } catch (error) {
-    console.error("Upload error:", error);
+    console.error("API Upload error:", error);
     return NextResponse.json({ success: false, error: "Upload failed" }, { status: 500 });
   }
 }
